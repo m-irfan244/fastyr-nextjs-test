@@ -5,8 +5,8 @@ import { GET_ALBUMS } from '@/graphql/albums';
 import { AlbumTable } from '@/components/albums/AlbumTable';
 import { AlbumImport } from '@/components/albums/AlbumImport';
 import { BulkDeleteButton } from '@/components/albums/BulkDeleteButton';
-import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { AlbumsResponse } from '@/types/common';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 export default function AlbumsPage() {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);

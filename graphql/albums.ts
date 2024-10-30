@@ -26,10 +26,12 @@ export const GET_ALBUM = gql`
         name
       }
       photos {
-        id
-        title
-        url
-        thumbnailUrl
+        data {
+          id
+          title
+          url
+          thumbnailUrl
+        }
       }
     }
   }

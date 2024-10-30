@@ -71,6 +71,7 @@ export interface Photo {
 
 export interface AlbumInput {
   title: string;
+  isEditing?: boolean
   userId: string;
 }
 

@@ -17,6 +17,8 @@ export default function AlbumDetailPage() {
 
   const { data, loading } = useQuery(GET_ALBUM, {
     variables: { id: albumId },
+    notifyOnNetworkStatusChange: true,
+    fetchPolicy: 'network-only',
   });
 
   const [updateAlbum] = useMutation(UPDATE_ALBUM, {
@@ -72,6 +74,7 @@ export default function AlbumDetailPage() {
   if (loading) return <LoadingSpinner />;
   if (!data?.album) return <div>Album not found</div>;
 
+  console.log(data, 'data')
   return (
     <div className="space-y-8">
       <div className="flex justify-between items-center">
@@ -80,8 +83,8 @@ export default function AlbumDetailPage() {
           Delete Album
         </Button>
       </div>
-      <AlbumForm album={data.album} onSubmit={handleUpdate} />
-      <PhotoGrid photos={data.album.photos || []} />
+      <AlbumForm album={data?.album} onSubmit={handleUpdate} />
+      <PhotoGrid photos={data?.album?.photos?.data || []} />
     </div>
   );
 }

@@ -40,7 +40,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <main className="flex-1">
               <Header onToggleSidebar={toggleSidebar} />
               <div className="p-8">{children}</div>
-              <Toaster />
+              <Toaster/>
             </main>
           </div>
         </ApolloWrapper>

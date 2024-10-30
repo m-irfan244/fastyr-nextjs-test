@@ -11,24 +11,24 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
-
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import {  Edit2, Save, Trash2 } from 'lucide-react';
+import { Edit2, Save, Trash2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { AlbumInput } from '@/types/common';
 import { parseFileData } from '@/lib/file-import';
 import { DataTable } from '../ui/DataTable';
 
 interface ImportRow extends AlbumInput {
-    id: string;
-    isValid: boolean;
-    errors: string[];
-    isEditing?: boolean;
-    draftTitle?: string;
-    draftUserId?: string;
-  }
-export function AlbumImport({ onSuccess }: { onSuccess?: () => void }) {
+  id: string;
+  isValid: boolean;
+  errors: string[];
+  isEditing: boolean;
+  draftTitle: string;
+  draftUserId: string;
+}
+
+export const   AlbumImport = ({ onSuccess }: { onSuccess?: () => void } ) => {
   const [isOpen, setIsOpen] = useState(false);
   const [importData, setImportData] = useState<ImportRow[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -44,13 +44,20 @@ export function AlbumImport({ onSuccess }: { onSuccess?: () => void }) {
       setIsLoading(true);
       const parsedData = await parseFileData(file);
       
-      const validatedData: ImportRow[] = (parsedData as Partial<AlbumInput>[]).map((row, index) => ({
-        id: `import-${index}`,
-        title: row.title || '',
-        userId: row.userId || '',
-        isValid: Boolean(row.title && row.userId),
-        errors: validateRow(row),
-      }));
+      const validatedData: ImportRow[] = (parsedData as Partial<AlbumInput>[]).map((row, index) => {
+        const title = row.title || '';
+        const userId = row.userId || '';
+        return {
+          id: `import-${index}`,
+          title,
+          userId,
+          draftTitle: title,
+          draftUserId: userId,
+          isValid: Boolean(title && userId),
+          errors: validateRow({ title, userId }),
+          isEditing: false,
+        };
+      });
       setImportData(validatedData);
     } catch  {
       toast({
@@ -63,7 +70,7 @@ export function AlbumImport({ onSuccess }: { onSuccess?: () => void }) {
     }
   };
 
-  const validateRow = (row: Partial<AlbumInput>): string[] => {
+  const validateRow = (row: { title?: string; userId?: string }): string[] => {
     const errors: string[] = [];
     if (!row.title) errors.push('Title is required');
     if (!row.userId) errors.push('User ID is required');
@@ -71,35 +78,58 @@ export function AlbumImport({ onSuccess }: { onSuccess?: () => void }) {
   };
 
   const handleRowEdit = (id: string) => {
-    setImportData(prev =>
-      prev.map(row =>
-        row.id === id ? { ...row, isEditing: !row.isEditing } : row
-      )
-    );
-  };
-
-  const handleRowDelete = (id: string) => {
-    setImportData(prev => prev.filter(row => row.id !== id));
-  };
-
-  const handleRowUpdate = (id: string, updatedData: Partial<AlbumInput>) => {
-    setImportData(prev =>
-      prev.map(row => {
+    setImportData(prevData =>
+      prevData.map(row => {
         if (row.id === id) {
-          const newRow = {
-            ...row,
-            ...updatedData,
-            isEditing: false,
-          };
+          const updatedRow = row.isEditing
+            ? {
+                ...row,
+                isEditing: false,
+                title: row.draftTitle,
+                userId: row.draftUserId,
+                errors: validateRow({
+                  title: row.draftTitle,
+                  userId: row.draftUserId,
+                }),
+              }
+            : { ...row, isEditing: true };
+  
           return {
-            ...newRow,
-            errors: validateRow(newRow),
-            isValid: validateRow(newRow).length === 0,
+            ...updatedRow,
+            isValid: updatedRow.errors.length === 0,
           };
         }
         return row;
       })
     );
+  };
+
+  const handleInputChange = (
+    id: string,
+    field: 'draftTitle' | 'draftUserId',
+    value: string
+  ) => {
+    setImportData(prev =>
+      prev.map(row => {
+        if (row.id === id) {
+          const updatedRow = { ...row, [field]: value };
+          const errors = validateRow({
+            title: field === 'draftTitle' ? value : row.draftTitle,
+            userId: field === 'draftUserId' ? value : row.draftUserId,
+          });
+          return {
+            ...updatedRow,
+            errors,
+            isValid: errors.length === 0,
+          };
+        }
+        return row;
+      })
+    );
+  };
+
+  const handleRowDelete = (id: string) => {
+    setImportData(prev => prev.filter(row => row.id !== id));
   };
 
   const handleImport = async () => {
@@ -147,7 +177,7 @@ export function AlbumImport({ onSuccess }: { onSuccess?: () => void }) {
         onSuccess?.();
         setIsOpen(false);
       }
-    } catch  {
+    } catch {
       toast({
         variant: "destructive",
         title: "Error",
@@ -163,45 +193,55 @@ export function AlbumImport({ onSuccess }: { onSuccess?: () => void }) {
     {
       accessorKey: "title",
       header: "Title",
-      cell: ({ row }:{ row: { original: ImportRow } }) => {
+      cell: ({ row }: { row: { original: ImportRow } }) => {
         const data = row.original;
-        return data.isEditing ? (
+        if (!data.isEditing) {
+          return (
+            <span className={data.errors.includes('Title is required') ? 'text-red-500' : ''}>
+              {data.title || 'No title'}
+            </span>
+          );
+        }
+        
+        return (
           <Input
-            defaultValue={data.title}
-            onChange={(e) => handleRowUpdate(data.id, { title: e.target.value })}
+            value={data.draftTitle}
+            onChange={(e) => handleInputChange(data.id, 'draftTitle', e.target.value)}
+            className="h-8"
           />
-        ) : (
-          <span className={data.errors.includes('Title is required') ? 'text-red-500' : ''}>
-            {data.title || 'No title'}
-          </span>
         );
       },
     },
     {
       accessorKey: "userId",
       header: "User ID",
-      cell: ({ row }:{ row: { original: ImportRow } }) => {
+      cell: ({ row }: { row: { original: ImportRow } }) => {
         const data = row.original;
-        return data.isEditing ? (
+        if (!data.isEditing) {
+          return (
+            <span className={data.errors.includes('User ID is required') ? 'text-red-500' : ''}>
+              {data.userId || 'No user ID'}
+            </span>
+          );
+        }
+  
+        return (
           <Input
-            defaultValue={data.userId}
-            onChange={(e) => handleRowUpdate(data.id, { userId: e.target.value })}
+            value={data.draftUserId}
+            onChange={(e) => handleInputChange(data.id, 'draftUserId', e.target.value)}
+            className="h-8"
           />
-        ) : (
-          <span className={data.errors.includes('User ID is required') ? 'text-red-500' : ''}>
-            {data.userId || 'No user ID'}
-          </span>
         );
       },
     },
     {
       id: "errors",
       header: "Validation",
-      cell: ({ row }:{ row: { original: ImportRow } }) => {
-        const errors = row.original.errors;
-        return errors.length > 0 ? (
+      cell: ({ row }: { row: { original: ImportRow } }) => {
+        const data = row.original;
+        return data.errors.length > 0 ? (
           <div className="text-red-500 text-sm">
-            {errors.join(', ')}
+            {data.errors.join(', ')}
           </div>
         ) : (
           <div className="text-green-500 text-sm">Valid</div>
@@ -211,7 +251,7 @@ export function AlbumImport({ onSuccess }: { onSuccess?: () => void }) {
     {
       id: "actions",
       header: "Actions",
-      cell: ({ row }:{ row: { original: ImportRow } }) => {
+      cell: ({ row }: { row: { original: ImportRow } }) => {
         const data = row.original;
         return (
           <div className="flex space-x-2">
@@ -226,6 +266,7 @@ export function AlbumImport({ onSuccess }: { onSuccess?: () => void }) {
               variant="ghost"
               size="sm"
               onClick={() => handleRowDelete(data.id)}
+              disabled={data.isEditing}
             >
               <Trash2 className="h-4 w-4" />
             </Button>
@@ -239,7 +280,13 @@ export function AlbumImport({ onSuccess }: { onSuccess?: () => void }) {
     <>
       <Button onClick={() => setIsOpen(true)}>Import Albums</Button>
 
-      <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <Dialog 
+        open={isOpen} 
+        onOpenChange={() => {
+          setIsOpen(false);
+          setImportData([]);
+        }}
+      >
         <DialogContent className="max-w-4xl">
           <DialogHeader>
             <DialogTitle>Import Albums</DialogTitle>
@@ -296,7 +343,10 @@ export function AlbumImport({ onSuccess }: { onSuccess?: () => void }) {
           <DialogFooter>
             <Button
               variant="outline"
-              onClick={() => setIsOpen(false)}
+              onClick={() => {
+                setIsOpen(false);
+                setImportData([]);
+              }}
               disabled={isLoading}
             >
               Cancel

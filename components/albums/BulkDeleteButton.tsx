@@ -1,7 +1,7 @@
-import { useMutation } from '@apollo/client';
+import { useMutation, useQuery } from '@apollo/client';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { DELETE_ALBUM } from '@/graphql/albums';
+import { DELETE_ALBUM, GET_ALBUMS } from '@/graphql/albums';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -26,6 +26,9 @@ export function BulkDeleteButton({ ids, onSuccess }: BulkDeleteButtonProps) {
   const [isDeleting, setIsDeleting] = useState(false);
 
   const [deleteAlbum] = useMutation(DELETE_ALBUM);
+  const { refetch } = useQuery(GET_ALBUMS, {
+    skip: true 
+  });
 
   const handleBulkDelete = async () => {
     setIsDeleting(true);
@@ -48,6 +51,7 @@ export function BulkDeleteButton({ ids, onSuccess }: BulkDeleteButtonProps) {
       }
 
       if (successCount > 0) {
+        refetch()
         toast({
           title: "Success",
           description: `Successfully deleted ${successCount} album${successCount > 1 ? 's' : ''}${

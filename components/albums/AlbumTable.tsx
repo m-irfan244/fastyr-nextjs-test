@@ -1,3 +1,4 @@
+'use client'
 import { useEffect, useState } from 'react';
 import {
   ColumnDef,
@@ -62,13 +63,12 @@ export const AlbumTable: React.FC<AlbumTableProps> = ({
       header: 'Title',
     },
     {
-      accessorKey: 'userId',
+      accessorKey: 'id',
       header: 'User ID',
     },
     {
       id: 'actions',
       cell: ({ row }) => {
-        console.log(row, 'rows')
         return (
             <Button
             variant="ghost"
