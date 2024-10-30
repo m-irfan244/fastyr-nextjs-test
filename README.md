@@ -4,7 +4,7 @@ A Next.js application demonstrating frontend development capabilities using mode
 
 
 ## Project Structure
-
+```
 fastyr-frontend-test/
 ├── app/
 │   ├── layout.tsx
